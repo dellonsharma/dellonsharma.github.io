@@ -32,6 +32,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,600;125,700&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
 
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem('theme');
+      if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+    } catch (e) {}
+  })();
+</script>
+
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -62,7 +71,7 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
       --bg: #0F141C;
       --fg: #E7EAF0;
       --muted: #9AA3B5;
@@ -72,6 +81,16 @@
       --tag-bg: #1B2537;
       color-scheme: dark;
     }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F141C;
+    --fg: #E7EAF0;
+    --muted: #9AA3B5;
+    --rule: #273142;
+    --accent: #8AB0FF;
+    --accent-ink: #A9C4FF;
+    --tag-bg: #1B2537;
+    color-scheme: dark;
   }
 
   * { box-sizing: border-box; }
@@ -104,13 +123,13 @@
   .masthead {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-between;
+    align-items: center;
     gap: 0.75rem 1.5rem;
     padding-block: 2.25rem 1.25rem;
     border-bottom: 1px solid var(--rule);
   }
   .nameplate {
+    flex: 1 1 auto;
     margin: 0;
     font-family: var(--font-display);
     font-stretch: 125%;
@@ -122,7 +141,44 @@
   }
   .nameplate a { color: var(--fg); text-decoration: none; }
   .nameplate a:hover { color: var(--accent); }
-  .masthead nav { display: flex; gap: 1.25rem; }
+  .masthead nav { display: flex; gap: 1.25rem; order: 2; }
+
+  /* Theme switch: pill track, round knob; knob left = light, right = dark */
+  .theme-toggle {
+    --tt-w: 64px;
+    --tt-h: 32px;
+    --tt-pad: 4px;
+    --tt-border: 2px;
+    order: 3;
+    position: relative;
+    flex: 0 0 auto;
+    width: var(--tt-w);
+    height: var(--tt-h);
+    padding: 0;
+    border: var(--tt-border) solid var(--fg);
+    border-radius: 999px;
+    background: var(--bg);
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .theme-toggle::after {
+    content: "";
+    position: absolute;
+    top: var(--tt-pad);
+    left: var(--tt-pad);
+    width: calc(var(--tt-h) - 2 * var(--tt-border) - 2 * var(--tt-pad));
+    height: calc(var(--tt-h) - 2 * var(--tt-border) - 2 * var(--tt-pad));
+    border-radius: 50%;
+    background: var(--fg);
+    transform: translateX(0);
+  }
+  .theme-toggle[aria-checked="true"]::after {
+    transform: translateX(calc(var(--tt-w) - var(--tt-h)));
+  }
+  .theme-toggle:hover { border-color: var(--accent); }
+  .theme-toggle:hover::after { background: var(--accent); }
+  .theme-toggle .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .masthead nav a {
     font-family: var(--font-mono);
     font-size: 0.78rem;
@@ -173,7 +229,7 @@
   }
 
   .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-  .list li {
+  .list > li {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: baseline;
@@ -182,7 +238,7 @@
     padding-block: 0.7rem;
     border-bottom: 1px solid var(--rule);
   }
-  .list li:last-child { border-bottom: 0; }
+  .list > li:last-child { border-bottom: 0; }
   .list .title { font-size: 1.12rem; font-weight: 600; line-height: 1.35; text-wrap: balance; min-width: 0; }
   .list .title a { text-decoration: none; color: var(--fg); }
   .list .title a:hover { color: var(--accent); text-decoration: underline; }
@@ -195,6 +251,9 @@
     font-variant-numeric: tabular-nums;
   }
   .list .desc { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 0.98rem; line-height: 1.5; min-width: 0; }
+  .list .desc p { margin: 0; }
+  .list .desc .plain { margin-top: 0.55rem; gap: 0.4rem; }
+  .list .desc strong { color: var(--fg); font-weight: 600; }
   .tag {
     display: inline-block;
     font-family: var(--font-mono);
@@ -250,12 +309,16 @@
   }
 
   @media (max-width: 520px) {
-    .list li { grid-template-columns: 1fr; }
+    .list > li { grid-template-columns: 1fr; }
     .list .meta { white-space: normal; }
     .masthead { padding-top: 1.5rem; }
+    .masthead nav { order: 3; flex-basis: 100%; }
+    .theme-toggle { order: 2; }
   }
   @media (prefers-reduced-motion: no-preference) {
     a, .more-btn, .copy-btn { transition: color 120ms ease, border-color 120ms ease; }
+    .theme-toggle { transition: border-color 120ms ease; }
+    .theme-toggle::after { transition: transform 180ms cubic-bezier(.4, 0, .2, 1), background-color 120ms ease; }
   }
 </style>
 </head>
@@ -268,6 +331,7 @@
       <a href="#work">Work</a>
       <a href="#contact">Contact</a>
     </nav>
+    <button class="theme-toggle" id="theme-toggle" type="button" role="switch" aria-checked="false" title="Dark mode"><span class="sr">Dark mode</span></button>
   </header>
 
   <div class="bio" id="bio">
@@ -310,7 +374,16 @@
       <li>
         <span class="title"><a href="https://ts4security.com">TS4 Security Services Inc.</a></span>
         <span class="meta">CEO · San Francisco</span>
-        <p class="desc">Event security and private patrol, CA BSIS PPO 122546. Moscone Center, Pier 48, St. Regis, Marriott Marquis, Four Seasons, and other Bay Area venues.</p>
+        <div class="desc">
+          <p>Executive management: corporate vision, daily business operations, and pivoting the company’s trajectory toward an aggressive overall global growth strategy.</p>
+          <ul class="plain">
+            <li><strong>Major events:</strong> Led security operations (large-scale event security, screening, crowd management, executive protection, and risk mitigation).</li>
+            <li>Overseeing tailored security compliance and programs for customized client sectors, which include Fortune 500 companies; federal, state, and local governments; public utilities; and ultra-high-net-worth individuals.</li>
+            <li>Guiding the firm’s focus on innovative physical security and risk management systems to enhance client safety.</li>
+            <li>Directing high-level operations for a massive workforce.</li>
+            <li>Steering the company’s long-term business roadmap.</li>
+          </ul>
+        </div>
       </li>
     </ul>
   </section>
@@ -344,6 +417,29 @@
 
 <script>
   (function () {
+    var root = document.documentElement;
+    var toggle = document.getElementById('theme-toggle');
+    var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+    function isDark() {
+      var t = root.getAttribute('data-theme');
+      if (t === 'dark') return true;
+      if (t === 'light') return false;
+      return !!(mq && mq.matches);
+    }
+    function render() {
+      if (toggle) toggle.setAttribute('aria-checked', isDark() ? 'true' : 'false');
+    }
+    if (toggle) {
+      toggle.addEventListener('click', function () {
+        var next = isDark() ? 'light' : 'dark';
+        root.setAttribute('data-theme', next);
+        try { localStorage.setItem('theme', next); } catch (e) {}
+        render();
+      });
+      if (mq && mq.addEventListener) mq.addEventListener('change', render);
+      render();
+    }
+
     var btn = document.getElementById('more-btn');
     var more = document.getElementById('bio-more');
     if (btn && more) {
